@@ -52,6 +52,7 @@
     var _$pane = $('<div id="mlj-tools-pane"></div>')
             .css({
                 width: "100%"
+                // height: "10%"
             })
             .data("visible", true);
 

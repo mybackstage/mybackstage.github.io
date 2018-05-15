@@ -109,7 +109,7 @@
         });
 
     };
-    plug._applyTo = function (meshFile, on) {
+    plug._applyTo = function (layer, on) {
         //alert(scene.getCamera());
     }
     plug.getBackfaceCullingValue = function (type) {

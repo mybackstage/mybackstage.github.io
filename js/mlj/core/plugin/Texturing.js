@@ -14,7 +14,8 @@ MLJ.core.plugin.Texturing = function (parameters, defaults) {
     this._main = function () {    
         _this._init(guiBuilder);
         //The webgl texture canvas wrapper
-        pane.appendContent('<div id="texCanvasWrapper"></div>');
+        // pane.appendContent('<div id="texCanvasWrapper"></div>');
+        pane.appendContent('<div class="contain" id="texCanvasWrapper"></div>');
         texturePane.append(pane.$);
         pane.$.hide();
     };

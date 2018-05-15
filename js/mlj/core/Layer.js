@@ -34,6 +34,9 @@
 MLJ.core.Layer = function (id, name)
 {
     console.log('BEG MLJ.core.Layer');
+
+    this.wallsInfo = [];
+    this.wallsInfoUuid = undefined;
     
     this.name = name;
     this.id = id;
@@ -83,9 +86,23 @@ MLJ.core.Layer = function (id, name)
             _this.properties.set("Points", true);
         }
 
-        // avner added
-        // _this.properties.set("Filled", true);
         console.log('END initializeRenderingAttributes');
+    };
+
+    this.getWallsInfoUuid = function () {
+        return _this.wallsInfoUuid;
+    };
+
+    this.setWallsInfoUuid = function (wallsInfoUuid) {
+        _this.wallsInfoUuid = wallsInfoUuid;
+    };
+    
+    this.getWallsInfo = function () {
+        return _this.wallsInfo;
+    };
+
+    this.setWallsInfo = function (wallsInfo) {
+        _this.wallsInfo = wallsInfo;
     };
 
     // This functions prepares the buffers that can be used by all the rendering overlay

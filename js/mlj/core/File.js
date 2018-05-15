@@ -80,7 +80,6 @@ MLJ.core.File = {
     };
 
     this.loadTextureImage2 = function (textureFileName, onTextureLoaded) {
-        // console.log('BEG loadTextureImage2'); 
 
         //let's create the layer-dependent texture array
         var texture2 = new THREE.TextureLoader().load( textureFileName, function ( texture2 ) {
@@ -95,6 +94,7 @@ MLJ.core.File = {
             // console.log('texture2.image', texture2.image);
             
             var texWidth = texture2.image.width;
+            // var texWidth = 500;
             var texHeight = texture2.image.height;
             var format = THREE.RGBFormat;
             var texComponentsTitle = "RGB";
@@ -111,6 +111,13 @@ MLJ.core.File = {
             var material2 = new THREE.SpriteMaterial( { map: texture2, color: 0xffffff, fog: true } );
             var sprite2 = new THREE.Sprite( material2 );
 
+            console.log('texWidth', texWidth);
+
+            // background-size: contain,
+            // object-fit: contain,
+            var objectFitVal = "contain";
+                // object-fit: objectFitVal,
+            
             texture2 = {
                 fileName: textureFileName,
                 height: texHeight,
@@ -130,15 +137,13 @@ MLJ.core.File = {
             // console.log('END THREE.TextureLoader().load');
 	});
         
-        // console.log('END loadTextureImage2'); 
     };
 
 
-    this.loadTextureImage = function (meshFile, onLoaded) {
-        // console.log('BEG loadTextureImage'); 
+    this.loadTextureImage1 = function (layer, onLoaded) {
 
         //let's create the layer-dependent texture array
-        meshFile.texture = [];
+        layer.texture = [];
         var textureIndex = 0;
         var textureName = "foo1a.png";
         
@@ -149,6 +154,7 @@ MLJ.core.File = {
             // console.log('texture.image', texture.image);
             
             var texWidth = texture.image.width;
+            // var texWidth = 500;
             var texHeight = texture.image.height;
             var format = THREE.RGBFormat;
             var texComponentsTitle = "RGB";
@@ -165,7 +171,7 @@ MLJ.core.File = {
              var material2 = new THREE.SpriteMaterial( { map: texture, color: 0xffffff, fog: true } );
             var sprite2 = new THREE.Sprite( material2 );
 
-            meshFile.texture[textureIndex] = {
+            layer.texture[textureIndex] = {
                 fileName: textureName,
                 height: texHeight,
                 width: texWidth,
@@ -177,46 +183,38 @@ MLJ.core.File = {
             textureIndex++;
             console.log("Loading texture " + 0 + " " + textureName + " " + texWidth + "x" + texHeight + " " + texComponentsTitle);
 
-            onLoaded(true, meshFile);
+            onLoaded(true, layer);
             
             // console.log('END THREE.TextureLoader().load');
 	});
         
-        // console.log('END loadTextureImage'); 
+    };
+
+    this.loadJson = function (json_filename) {
+        var data;
+        // https://blog-en.openalfa.com/how-to-read-synchronously-json-files-with-jquery
+        $.ajax({ 
+            url: json_filename, 
+            dataType: 'json', 
+            data: data, 
+            async: false, 
+            success: function(json){
+                // console.log('BEG getJSON'); 
+                data = json;
+                return;
+            }
+        });
+
+        // console.log('data2');
+        // console.log(data);
+
+        return data;
     };
     
-    this.loadZipFile = function (archiveFileName, meshFile, onLoaded) {
-
-        // https://github.com/yomotsu/ZipLoader
-        // console.log("BEG loadZipFile");
-
-        // ok
-        // var zipLoader = new ZipLoader( 'mesh/3543_W18_shimi_mainHouse.3.reduceVertices.zip' );
-        // var zipLoader = new ZipLoader( 'mesh/3543_W18_shimi_mainHouse.4.reduceVertices.zip' );
-        
-        // console.log("archiveFileName: " + archiveFileName);
-        // var zipLoader = new ZipLoader( archiveFileName );
-        
-        // ok
-        // var zipLoader = new ZipLoader( 'mesh/3543_W18_shimi_mainHouse.4.reduceVertices.zip' );
-
-        // ok
-        // archiveFileName = 'mesh/3543_W18_shimi.SM.zip';
-
-        // ok
-        // archiveFileName = 'mesh/foo1.zip';
-
-        // not ok - [oser of 3 (maybe not in sync with room1 json files, which will eventually get into the .zip file)
-        // archiveFileName = 'mesh/3543_W18_shimi.SM2.zip';
-
-        // ok when selecting the file via the "open file" button
-        // if file is in /home/avner/avner/meshlabjs/branches/meshlabjs_avnerV1/3543_W18_shimi.SM.zip
-        // (but not if the file is in /home/avner/avner/meshlabjs/branches/meshlabjs_avnerV1/mesh/3543_W18_shimi.SM.zip)
-        // has to be in the same directory where index.html is ?
-        
+    this.loadZipFile = function (zipLoader, archiveFileName, layer, onLoaded) {
+        console.log('BEG loadZipFile');
         console.log("archiveFileName: " + archiveFileName);
 
-        var zipLoader = new ZipLoader( archiveFileName );
         
         zipLoader.on( 'load', function ( e ) {
 
@@ -227,9 +225,15 @@ MLJ.core.File = {
             
             // loop over keys
             var blobs = MLJ.core.Scene.getBlobs();
+            console.log('blobs.length1', Object.keys(blobs).length);
+            
+
             
             var mtlFileName;
             var objFileName;
+
+            var wallsInfo = [];
+
             for (var key in filenames)
             {
                 filename = filenames[key];
@@ -241,17 +245,24 @@ MLJ.core.File = {
                     case "":
                         // e.g. skip directory names
                         break;
+                    case "zip":
+                        console.log( 'create layer with name: ' + filename );
+                        var layer1 = MLJ.core.Scene.createLayer(filename);
+                        layer1.fileName = filename;
+                            
+                        var zipLoader1 = new ZipLoader( filename );
+                        console.log('zipLoader1', zipLoader1);
+                        
+                        _this.loadZipFile(zipLoader1, filename, layer1, onLoaded);
+                        break;
                     case "jpg":
+                    case "jpeg":
                     case "JPG":
+                    // case "png":
                         blobs[filename] = zipLoader.extractAsBlobUrl( filename, 'image/jpeg' );
                         // console.log('blobs[filename]', blobs[filename]); 
                         break;
-                    case "png":
-                        blobs[filename] = zipLoader.extractAsBlobUrl( filename, 'image/png' );
-                        // console.log('blobs[filename]', blobs[filename]); 
-                        break;
                     case "mtl":
-                    case "pto":
                         blobs[filename] = zipLoader.extractAsBlobUrl( filename, 'text/plain' );
                         mtlFileName = filename;
                         break;
@@ -259,8 +270,35 @@ MLJ.core.File = {
                         blobs[filename] = zipLoader.extractAsBlobUrl( filename, 'text/plain' );
                         objFileName = filename;
                         break;
+                    case "pto":
+                        break;
+                    case "json":
+                        blobs[filename] = zipLoader.extractAsBlobUrl( filename, 'text/plain' );
+
+                        // e.g.
+                        // floor0/wall_24/wall_image_attributes2.json
+                        // console.log( 'filename: ' + filename );
+
+                        var re1 = /wall_image_attributes2/;
+                        var regex1_matched = filename.match(re1);
+                        if(regex1_matched)
+                        {
+                            console.log('regex1_matched');
+                            console.log('filename4', filename); 
+                            console.log('blobs[filename]', blobs[filename]);
+                            var wallInfo = _this.loadJson(blobs[filename]);
+
+                            wallsInfo.push(wallInfo);
+                        }
+                        else
+                        {
+                            // should not reach here
+                            console.error('Found json file that is not wall info');
+                        }
+                        
+                        break;
                     default:
-                        var msgStr = 'fileExtension: ' + fileExtention + 'in .zip file is not supported';
+                        var msgStr = 'fileExtension: ' + fileExtention + ' in .zip file is not supported';
                         console.log( msgStr );
                         return;
                         throw msgStr;
@@ -268,18 +306,38 @@ MLJ.core.File = {
                 }
             }
 
+            MLJ.core.Scene.setBlobs(blobs);
+            console.log('blobs.length2', Object.keys(blobs).length);
+
+            if(objFileName === undefined)
+            {
+                console.log('objFileName is undefined');
+                return 0;
+            }
+
+            console.log('wallsInfo4', wallsInfo);
+            console.log('layer.name4', layer.name);
+            
+            layer.setWallsInfo(wallsInfo);
+            
             // console.log('blobs', blobs);
             console.log( 'mtlFileName: ' + mtlFileName );
             console.log( 'objFileName: ' + objFileName );
 
-            MLJ.core.Scene.setBlobs(blobs);
-            
             var loadingManager = new THREE.LoadingManager();
 
             // Initialize loading manager with URL callback.
             var objectURLs = [];
             loadingManager.setURLModifier( ( url ) => {
+                console.log('url1', url); 
+                if(!blobs[ url ])
+                {
+                    url = url.replace(/\.\//i, '');
+                    console.log('url3', url); 
+                }
+
 	        url = blobs[ url ];
+                console.log('url2', url); 
 	        objectURLs.push( url );
 	        return url;
             } );
@@ -304,10 +362,12 @@ MLJ.core.File = {
                         }
                     });
                     object2 = object;
+                    console.log('object.uuid', object.uuid);
                     MLJ.core.Scene.add( object );
+                    
+                    layer.setWallsInfoUuid(object.uuid);
 
-                    _this.loadTextureImage(meshFile, onLoaded);
-
+                    _this.loadTextureImage1(layer, onLoaded);
 	        } );
 
 	    });
@@ -320,13 +380,15 @@ MLJ.core.File = {
 
         return 0;
     }
+
+
     
     /**
-     * Loads 'file' in the virtual file system as an Int8Array and reads it into the layer 'mf'
+     * Loads 'file' in the virtual file system as an Int8Array and reads it into the layer 'layer'
      */
-    this.loadMeshDataFromFile = function (file, mf, onLoaded) {
-        // console.log('BEG loadMeshDataFromFile');
-        
+    this.loadMeshDataFromFile = function (file, layer, onLoaded) {
+
+        console.log('file', file);
         var fileReader = new FileReader();
         fileReader.readAsArrayBuffer(file);
         fileReader.onloadend = function (fileLoadedEvent) {
@@ -335,12 +397,12 @@ MLJ.core.File = {
             var resOpen = -1;
             if (file.name.split('.').pop() === "zip")
             {
-                resOpen = _this.loadZipFile(file.name, mf, onLoaded);
+                var zipLoader = new ZipLoader( file.name );
+                console.log('zipLoader', zipLoader);
+                resOpen = _this.loadZipFile(zipLoader, file.name, layer, onLoaded);
             }
         };
-        // console.log('END loadMeshDataFromFile');
     }
-
 
     
     /**
@@ -375,17 +437,16 @@ MLJ.core.File = {
                 return;
             }
 
-            var mf = MLJ.core.Scene.createLayer(file.name);
-
-            mf.fileName = file.name;
-            
-            _this.loadMeshDataFromFile(file, mf, function (loaded, meshFile) {
+            var layer = MLJ.core.Scene.createLayer(file.name);
+            layer.fileName = file.name;
+            _this.loadMeshDataFromFile(file, layer, function (loaded, layer) {
                 if (loaded) {
-                    // console.log('Trigger "MeshFileOpened"');
-                    
+                    console.log('Trigger "MeshFileOpened"');
+                    console.log('layer.name', layer.name); 
+
                     // Trigger event to indicate that the mesh file finished openning
                     // (this will cause to add a new layer via addLayer)
-                    $(document).trigger("MeshFileOpened", [meshFile]);
+                    $(document).trigger("MeshFileOpened", [layer]);
                     
                     // console.timeEnd("Parsing Mesh Time");
                     // console.timeEnd("Read mesh file");
@@ -406,40 +467,6 @@ MLJ.core.File = {
                 // Trigger event to indicate that the texture2 finished openning
                 $(document).trigger("Texture2FileOpened", texture2);
                 
-            }
-        });
-    };
-
-    /**
-     * Reloads an existing layer, that is recovers the file linked to the layer
-     * @param {MLJ.core.Layer} mf the MeshFile to be reloaded
-     * @memberOf MLJ.core.File
-     * @fires MLJ.core.File#MeshFileReloaded
-     */
-    this.reloadMeshFile = function (mf) {
-        var file = _openedList.getByKey(mf.fileName);
-
-        if (file === undefined) {
-            console.warn("MLJ.file.reloadMeshFile(name): the scene not contains file '" + name + "'.");
-            return;
-        }
-
-        _this.loadMeshDataFromFile(file, mf, function (loaded, meshFile) {
-            if (loaded) {
-                /**
-                 *  Triggered when a mesh file is reloaded
-                 *  @event MLJ.core.File#MeshFileReloaded
-                 *  @type {Object}
-                 *  @property {MLJ.core.Layer} meshFile The reloaded mesh file
-                 *  @example
-                 *  <caption>Event Interception:</caption>
-                 *  $(document).on("MeshFileReloaded",
-                 *      function (event, meshFile) {
-                 *          //do something
-                 *      }
-                 *  );
-                 */
-                $(document).trigger("MeshFileReloaded", [meshFile]);
             }
         });
     };

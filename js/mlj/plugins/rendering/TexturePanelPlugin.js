@@ -26,19 +26,19 @@ var animationDuration = 200;
     };
 
 
-    plug._applyTo = function (meshFile, layersNum, $) {
+    plug._applyTo = function (layer, layersNum, $) {
         console.log('BEG TexturePanelPlugin::plug._applyTo'); 
 
         //if the array has been defined then there was at least a texture, for now, we are gonna show ONLY the first one
-        if (meshFile.texture.length > 0) {
-            meshFile.texturesNum = 1;
+        if (layer.texture.length > 0) {
+            layer.texturesNum = 1;
         }
 
         // remove?
         scene.render();
 
         scene2 = scene;
-        meshObject2 = meshFile;
+        meshObject2 = layer;
         
         $("#texCanvasWrapper").append(texRenderer.domElement);
 
@@ -47,43 +47,45 @@ var animationDuration = 200;
             texScene.remove(texScene.children[i]);
         }
 
-        if (meshFile.texturesNum > 0 && layersNum > 0) {
+        if (layer.texturesNum > 0 && layersNum > 0) {
 
             showWidgets();
 
-            for (var i = 0; i < meshFile.texturesNum; i++) {
-                var texWidth = meshFile.texture[i].width;
-                var texHeight = meshFile.texture[i].height;
-                var texFormat = meshFile.texture[i].format;
+            for (var i = 0; i < layer.texturesNum; i++) {
+                // var texWidth = layer.texture[i].width;
+                // var texHeight = layer.texture[i].height;
+                // var texFormat = layer.texture[i].format;
 
-                console.log('texWidth', texWidth); 
-                console.log('texHeight', texHeight); 
+                // console.log('texWidth', texWidth); 
+                // console.log('texHeight', texHeight); 
 
                 //If a layer is added, we need to create the planar mesh with the texture for the first time, so, if it's undefined
                 //We'll create it only now in order to avoid useless computation on each layer selections
-                if (!meshFile.texture[i].planeMesh) {
+                if (!layer.texture[i].planeMesh) {
 
-                    var map2 = meshFile.texture[0].data.material.map;
+                    var map2 = layer.texture[0].data.material.map;
                     // console.log('map2', map2);
                     
                     var material = new THREE.SpriteMaterial( { map: map2, color: 0xffffff, fog: true } );
                     var planeMesh = new THREE.Sprite( material );
                     planeMesh.position.x = planeMesh.position.y = planeMesh.position.z = 0;
-                    planeMesh.scale.x = planeMesh.scale.y = 70;
+                    // planeMesh.scale.x = planeMesh.scale.y = 70;
+                    planeMesh.scale.x = 100
+                    planeMesh.scale.y = 100;
                     planeMesh.name = "planeMesh";
                     
-                    meshFile.texture[i].planeMesh = planeMesh;
-                    // console.log('meshFile.texture[i].planeMesh', meshFile.texture[i].planeMesh);
+                    layer.texture[i].planeMesh = planeMesh;
+                    // console.log('layer.texture[i].planeMesh', layer.texture[i].planeMesh);
                 }
             }
 
-            // console.log('meshFile.texture[0].planeMesh', meshFile.texture[0].planeMesh);
+            // console.log('layer.texture[0].planeMesh', layer.texture[0].planeMesh);
             
             //Add the mesh to the scene
             texControls.reset();
 
             // The plane mesh is always visible
-            texScene.add(meshFile.texture[meshFile.selectedTexture].planeMesh);
+            texScene.add(layer.texture[layer.selectedTexture].planeMesh);
             
         } else {
             hideWidgets();
@@ -208,7 +210,7 @@ var animationDuration = 200;
     plugin.Manager.install(plug);
 
     var doLoadHardcodedZipFile = true;
-    // var doLoadHardcodedZipFile = false;
+    doLoadHardcodedZipFile = false;
     if(doLoadHardcodedZipFile)
     {
         // $(window).load happens after $(window).ready
@@ -225,7 +227,12 @@ var animationDuration = 200;
             // txtFile needs to in the same dir as index.html
             // https://stackoverflow.com/questions/8390855/how-to-instantiate-a-file-object-in-javascript
             // var txtFile = "foo1.zip"
-            var txtFile = "3543_W18_shimi.SM.zip"
+            // var txtFile = "3543_W18_shimi.SM.zip"
+            // var txtFile = "2910_w47_shertzer_section0.6a_reduceTextureIndices.zip"
+            // var txtFile = "2910_w47_shertzer_section0.6a_reduceTextureIndices.floor0.zip"
+            var txtFile = "2910_w47_shertzer_section0.6a_reduceTextureIndices.floor0_sm.zip"
+            // var txtFile = "2910_w47_shertzer_section0.6a_reduceTextureIndices.floor1_sm.zip"
+            
             var file1 = new File([""], txtFile, {type: "application/zip"})
             // console.log('file1', file1); 
             MLJ.core.File.openMeshFile(file1);

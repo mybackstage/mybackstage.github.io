@@ -3542,7 +3542,8 @@
 			xhr.onload = function (e) {
 
 			    _this.files = parseZip(xhr.response);
-			    console.log('_this.files: ' + _this.files);
+			    // console.log('_this.files: ' + _this.files);
+                            console.log('_this.files', _this.files); 
                             
 				_this.dispatch({
 					type: 'load',
@@ -3555,7 +3556,12 @@
 
 		ZipLoader.prototype.extractAsBlobUrl = function extractAsBlobUrl(filename, type) {
 
-			if (this.files[filename].url) {
+			if (this.files[filename] === undefined) {
+                            console.log('this.files3', this.files); 
+                            console.log('filename3', filename);
+			}
+
+		    if (this.files[filename].url) {
 
 				return this.files[filename].url;
 			}

@@ -8,10 +8,13 @@ var radius = 100, theta = 0;
 var intersectionPrev = 0;
 
 var doEnableOverlayImageBoundaries = true;
-// var doEnableOverlayImageBoundaries = false;
+// doEnableOverlayImageBoundaries = false;
 
 (function () {
+    // place _wallsInfo in _layers (=== _floorsInfo) ???
+    // var _wallsInfo;
     var _layers = new MLJ.util.AssociativeArray();
+    
     var _decorators = new MLJ.util.AssociativeArray();
     var _scene;
     var _group;
@@ -24,8 +27,6 @@ var doEnableOverlayImageBoundaries = true;
     var _mouse = new THREE.Vector2();
     var _renderer;
     var _this = this;
-    var _wallsInfo;
-    var _threedModelAttributes;
     var _selectedImageGeometry;    
     var _selectedImageLineSegments;
     var _blobs = {};
@@ -76,7 +77,7 @@ var doEnableOverlayImageBoundaries = true;
     }
     
     function initScene() {
-        // console.log('BEG initScene');
+        console.log('BEG initScene');
 
         var _3DSize = get3DSize();
 
@@ -126,9 +127,11 @@ var doEnableOverlayImageBoundaries = true;
         //INIT CONTROLS
         var container = document.getElementsByTagName('canvas')[0];
         _controls = new THREE.TrackballControls(_camera, container);
-        _controls.rotateSpeed = 4.0;
+
+        _controls.rotateSpeed = 2.0;
         _controls.zoomSpeed = 1.2;
         _controls.panSpeed = 2.0;
+
         _controls.noZoom = false;
         _controls.noPan = false;
         _controls.staticMoving = true;
@@ -144,16 +147,6 @@ var doEnableOverlayImageBoundaries = true;
 
         });
 
-
-        if(doEnableOverlayImageBoundaries)
-        {
-            /////////////////////////////////////////////////////////////////
-            // overlay images boundaries on 3d model
-            /////////////////////////////////////////////////////////////////
-
-            var materialYellow = new THREE.LineBasicMaterial({color: 0xffff00});
-            _this.overlayWallsImagesBoundariesOn3dModel(materialYellow);
-        }
 
         /////////////////////////////////////////////////////////////////
         // add selected image
@@ -211,6 +204,16 @@ var doEnableOverlayImageBoundaries = true;
         $(document).on("MeshFileOpened",
                        function (event, layer) {
                            // console.log('Received event "MeshFileOpened"'); 
+
+                           if(doEnableOverlayImageBoundaries)
+                           {
+                               /////////////////////////////////////////////////////////////////
+                               // overlay images boundaries on 3d model
+                               /////////////////////////////////////////////////////////////////
+
+                               var materialYellow = new THREE.LineBasicMaterial({color: 0xffff00});
+                               _this.overlayWallsImagesBoundariesOn3dModel(layer, materialYellow);
+                           }
                            MLJ.core.Scene.addLayer(layer);
                        });
 
@@ -223,11 +226,7 @@ var doEnableOverlayImageBoundaries = true;
 
         // console.log('END initScene');
 
-        // if (typeof jQuery != 'undefined') {  
-        //     // jQuery is loaded => print the version
-        //     alert(jQuery.fn.jquery);
-        // }
-
+        console.log('END initScene');
     }
 
     function sleep(miliseconds) {
@@ -294,6 +293,11 @@ var doEnableOverlayImageBoundaries = true;
 	_scene.add( obj );
     };
     
+    this.selectLayerByName = function (layerName) {
+        _selectedLayer = _layers.getByKey(layerName);
+        $(document).trigger("SceneLayerSelected", [_selectedLayer]);
+    };
+
     this.setLayerVisible = function (layerName, visible) {
         var layer = _layers.getByKey(layerName);
         layer.getThreeMesh().visible = visible;
@@ -307,7 +311,7 @@ var doEnableOverlayImageBoundaries = true;
     };
 
     this.addLayer = function (layer) {
-        // console.log('BEG addLayer');
+        console.log('BEG addLayer');
         
         if (!(layer instanceof MLJ.core.Layer)) {
             console.error("The parameter must be an instance of MLJ.core.Layer");
@@ -317,39 +321,26 @@ var doEnableOverlayImageBoundaries = true;
         // Initialize the THREE geometry used by overlays and rendering params
         layer.initializeRenderingAttributes();
         _group.add(layer.getThreeMesh());
+        console.log('_group uuid1', _group);
 
         //Add new mesh to associative array _layers            
         _layers.set(layer.name, layer);
-        _selectedLayer = layer;
 
+        console.log('layer.threeMesh.uuid', layer.threeMesh.uuid);
+        console.log('layer.threeMesh.parent.uuid', layer.threeMesh.parent.uuid);
+        console.log('layer.threeMesh.geometry.uuid', layer.threeMesh.geometry.uuid);
+        console.log('layer uuid1', layer);
+        console.log('_layers.size()', _layers.size());
+        console.log('_layers.getFirst() uuid2', _layers.getFirst());
+        
+        _selectedLayer = layer;
+        
         _computeGlobalBBbox();
 
         // console.log('Trigger event "SceneLayerAdded"');
         $(document).trigger("SceneLayerAdded", [layer, _layers.size()]);
         _this.render();
         // console.log('END addLayer');
-    };
-
-    this.addOverlayLayer = function (layer, name, mesh, overlay2D) {
-        // console.log('BEG addOverlayLayer'); 
-        if (!(mesh instanceof THREE.Object3D)) {
-            console.warn("mesh parameter must be an instance of THREE.Object3D");
-            return;
-        }
-
-        layer.overlays.set(name, mesh);
-
-        mesh.visible = layer.getThreeMesh().visible;
-        if (overlay2D) {
-            _scene2D.add(mesh);
-        }
-        else
-        {
-            layer.getThreeMesh().add(mesh);
-        }
-
-        _this.render();
-        // console.log('END addOverlayLayer'); 
     };
 
     function disposeObject(obj) {
@@ -411,10 +402,32 @@ var doEnableOverlayImageBoundaries = true;
 
     var lastID = 0;
     this.createLayer = function (name) {
+        console.log('name', name); 
         // console.log('BEG createLayer'); 
-        var layerName = "MyLayer";
+        // var layerName = "MyLayer";
+        var layerName = name;
+        
         var layer = new MLJ.core.Layer(lastID++, layerName);
         return layer;
+    };
+
+    this.removeLayerByName = function (name) {
+        var layer = this.getLayerByName(name);
+
+        if (layer !== undefined) {
+            //remove layer from list
+            _group.remove(layer.getThreeMesh());
+            _layers.remove(layer.name);
+            $(document).trigger("SceneLayerRemoved", [layer, _layers.size()]);
+
+            if (_layers.size() > 0) {
+                _this.selectLayerByName(_layers.getFirst().name);
+            } else {
+                _this._selectedLayer = undefined;
+            }
+            _computeGlobalBBbox();
+            MLJ.core.Scene.render();
+        }
     };
 
     this.addSceneDecorator = function (name, decorator) {
@@ -428,6 +441,7 @@ var doEnableOverlayImageBoundaries = true;
 
         _this.render();
     };
+
 
     this.getBlobs = function () {
         return _blobs;
@@ -503,27 +517,6 @@ var doEnableOverlayImageBoundaries = true;
         offscreen: {type: "t", value: null}
     };
 
-    this.loadJson = function (json_filename) {
-        var data;
-        // https://blog-en.openalfa.com/how-to-read-synchronously-json-files-with-jquery
-        $.ajax({ 
-            url: json_filename, 
-            dataType: 'json', 
-            data: data, 
-            async: false, 
-            success: function(json){
-                // console.log('BEG getJSON'); 
-                data = json;
-                return;
-            }
-        });
-
-        // console.log('data2');
-        // console.log(data);
-
-        return data;
-    };
-
     this.calcDistance = function (point1, point2) {
         
         var a = point1.x - point2.x;
@@ -533,33 +526,51 @@ var doEnableOverlayImageBoundaries = true;
         return dist;
     };
     
-    this.calcNearestImage = function (faceIndex, materialIndex, intersectionUvCoord) {
+    this.calcNearestImage = function (layer, faceIndex, materialIndex, intersectionUvCoord) {
         
         // console.log('materialIndex', materialIndex);
         // console.log('intersectionUvCoord', intersectionUvCoord);
         var minDist = 1E6;
         var wallIndex = -1;
         var imageIndex = -1;
-        
-        for (var i = 0; i < _wallsInfo.length; ++i) {
-            // console.log('_wallsInfo[i].materialIndex', _wallsInfo[i].materialIndex);
+        if(!intersectionUvCoord)
+        {
+            console.log('intersectionUvCoord', intersectionUvCoord);
+            return {wallIndex : -1, imageIndex : -1}
+        }
 
-            if(!_wallsInfo[i])
+        var wallsInfo = layer.getWallsInfo();
+
+        for (var i = 0; i < wallsInfo.length; ++i) {
+            // console.log('wallsInfo[i].materialIndex', wallsInfo[i].materialIndex);
+
+            if(!wallsInfo[i])
             {
-                console.log('_wallsInfo[i] is not defined');
+                console.log('wallsInfo[i] is not defined');
                 continue;
             }
             
-            if(materialIndex == _wallsInfo[i].materialIndex)
+            if(materialIndex == wallsInfo[i].materialIndex)
             {
-                // console.log('_wallsInfo[i].materialName', _wallsInfo[i].materialName);
+                // console.log('wallsInfo[i].materialName', wallsInfo[i].materialName);
                 
                 wallIndex = i;
-                for (var j = 0; j < _wallsInfo[i].imagesInfo.length; ++j) {
-                    var imageInfo = _wallsInfo[i].imagesInfo[j];
-                    // console.log('imageInfo.centerPoint.uvCoordsNormalized', imageInfo.centerPoint.uvCoordsNormalized);
+                for (var j = 0; j < wallsInfo[i].imagesInfo.length; ++j) {
+                    var imageInfo = wallsInfo[i].imagesInfo[j];
 
-                    dist = _this.calcDistance(intersectionUvCoord, imageInfo.centerPoint.uvCoordsNormalized);
+                    var centerPointUvCoordNormalized = imageInfo.centerPoint.uvCoordsNormalized;
+
+                    // console.log('imageInfo.centerPoint.uvCoordsNormalized', imageInfo.centerPoint.uvCoordsNormalized);
+                    // centerPointUvCoordNormalized.y = 1 - centerPointUvCoordNormalized.y;
+                    // console.log('centerPointUvCoordNormalized.y', centerPointUvCoordNormalized.y);
+                    
+                    if(!(centerPointUvCoordNormalized))
+                    {
+                        console.log('centerPointUvCoordNormalized', centerPointUvCoordNormalized);
+                        return {wallIndex : -1, imageIndex : -1}
+                    }
+                    
+                    dist = _this.calcDistance(intersectionUvCoord, centerPointUvCoordNormalized);
                     if(dist < minDist)
                     {
                         minDist = dist;
@@ -581,8 +592,8 @@ var doEnableOverlayImageBoundaries = true;
 
     
     this.addImageBoundaries = function (imageInfo) {
-        var imageFileName = imageInfo.imageFileName;
-        // console.log('imageFileName: ' + imageFileName);
+        var imageFilename = imageInfo.imageFilename;
+        // console.log('imageFilename: ' + imageFilename);
 
         var vertices = [];
         var vertex1 = this.addSegmentVertex(imageInfo.tlPoint);
@@ -628,6 +639,10 @@ var doEnableOverlayImageBoundaries = true;
         _scene.remove( _selectedImageLineSegments );
 
         _selectedImageGeometry = new THREE.Geometry();
+
+        console.log('BEG overlayWallImageBoundariesOn3dModel'); 
+        console.log('imageInfo', imageInfo);
+        
         _selectedImageGeometry.vertices = _this.addImageBoundaries(imageInfo);
         _selectedImageGeometry.colorsNeedUpdate = true;
         _selectedImageGeometry.verticesNeedUpdate = true;
@@ -639,19 +654,6 @@ var doEnableOverlayImageBoundaries = true;
         // _selectedImageLineSegments.geometry.vertices = _selectedImageGeometry.vertices;
         // _selectedImageLineSegments.material = material;
         _selectedImageLineSegments.material.needsUpdate = true;
-        
-        // console.log('_selectedImageLineSegments'); 
-        // console.log(_selectedImageLineSegments); 
-
-        // console.log('_selectedImageLineSegments.geometry.verticesNeedUpdate', _selectedImageLineSegments.geometry.verticesNeedUpdate);
-        
-        // console.log('_selectedImageLineSegments2'); 
-        // console.log(_selectedImageLineSegments); 
-
-        // console.log('_this'); 
-        // console.log(_this); 
-        // console.log('_scene'); 
-        // console.log(_scene); 
 
         _scene.add( _selectedImageLineSegments )
         _renderer.render(_scene, _camera);
@@ -661,38 +663,21 @@ var doEnableOverlayImageBoundaries = true;
         // _selectedImageLineSegments.geometry.dynamic = true;
     };
 
-    this.overlayWallsImagesBoundariesOn3dModel = function (material) {
-
-        _threedModelAttributes = _this.loadJson("mesh/3543_W18_shimi_mainHouse.json");
+    this.overlayWallsImagesBoundariesOn3dModel = function (layer, material) {
+        console.log('BEG overlayWallsImagesBoundariesOn3dModel');
         
-        _wallsInfo = [];
-
-        var wallInfo;
-        
-        wallInfo = _this.loadJson("mesh/room1/wall1/wall_image_attributes2.json");
-        _wallsInfo.push(wallInfo);
-
-        wallInfo = _this.loadJson("mesh/room1/wall3/wall_image_attributes2.json");
-        _wallsInfo.push(wallInfo);
-
-        wallInfo = _this.loadJson("mesh/room1/wall4/wall_image_attributes2.json");
-        _wallsInfo.push(wallInfo);
-
-        wallInfo = _this.loadJson("mesh/room1/wall5/wall_image_attributes2.json");
-        _wallsInfo.push(wallInfo);
-
-        wallInfo = _this.loadJson("mesh/room1/wall6/wall_image_attributes2.json");
-        _wallsInfo.push(wallInfo);
-
         var vertices1 = [];
         var geometry = new THREE.Geometry();
-        console.log('_wallsInfo.length'); 
-        console.log(_wallsInfo.length); 
-        for (var i = 0; i < _wallsInfo.length; ++i) {
-            console.log('i: ' + i); 
-            console.log('_wallsInfo[i]'); 
-            console.log(_wallsInfo[i]); 
-            var vertices2 = _this.addImagesBoundaries(_wallsInfo[i].imagesInfo);
+
+        var wallsInfo = layer.getWallsInfo();
+
+        console.log('wallsInfo.length'); 
+        console.log(wallsInfo.length); 
+        for (var i = 0; i < wallsInfo.length; ++i) {
+            // console.log('i: ' + i); 
+            // console.log('wallsInfo[i]'); 
+            // console.log(wallsInfo[i]); 
+            var vertices2 = _this.addImagesBoundaries(wallsInfo[i].imagesInfo);
             vertices1.push.apply(vertices1, vertices2)
         }
         geometry.vertices = vertices1;
@@ -701,6 +686,40 @@ var doEnableOverlayImageBoundaries = true;
         _scene.add( lineSegments )
     }
 
+    this.getIntersectionLayer = function (intersectionSceneChildUuid) {
+
+        console.log('BEG getIntersectionLayer');
+        // // find intersection layer - take1
+        // for (var i = 0; i < _layers.size(); i++) {
+        //     var layer = _layers[i];
+        //     if(layer.wallsInfoUuid === intersectionSceneChildUuid)
+        //     {
+        //         console.log('find intersection layer - take1'); 
+        //         return layer;
+        //     }
+        // }
+
+        // find intersection layer - take2
+        var iter = _layers.iterator();
+
+        console.log('intersectionSceneChildUuid', intersectionSceneChildUuid);
+        // Iterating over all the layers
+        while (iter.hasNext()) {
+            var layer = iter.next();
+            var wallsInfoUuid = layer.getWallsInfoUuid();
+            console.log('wallsInfoUuid', wallsInfoUuid);
+            
+            if(wallsInfoUuid === intersectionSceneChildUuid)
+            {
+                console.log('find intersection layer - take2'); 
+                return layer;
+            }
+        }
+        
+        // shouldn't reach here
+        console.error("Did not find a layer for the intersection");
+        return;
+    }
 
     this.findIntersections = function () {
         // BEG from example2_objLoader_raycasting.js
@@ -734,12 +753,43 @@ var doEnableOverlayImageBoundaries = true;
         if ( intersects.length > 0 ) {
 
             var intersection = intersects[0];
+            // clone ??
+            // console.log('intersection uuid1', intersection); 
             var faceIndex = intersection.faceIndex / 3;
             var materialIndex1 = Math.floor(faceIndex/2);
             var indexInMaterialIndices = faceIndex;
             var materialIndex = materialIndex1;
             var intersectionObj = intersection.object;
+            
+            if ( intersectionPrev != intersectionObj )
+            {
+                // floor0
+                // { uuid: "EC06450B-6A4D-4AC9-9C83-BA362727B329", name: "", type: "Group
 
+                // floor1
+                // { uuid: "D32FBFF9-0040-4EB2-8DC2-DBB0661451FB", name: "", type: "Group",
+                
+                // compare
+                // intersectionObj.parent.uuid vs
+                // _scene.children array entries [Type Group] vs
+                // object2.uuid
+                //  to know which floor
+                console.log('_scene.children', _scene.children);
+                console.log('intersectionObj.parent.uuid', intersectionObj.parent.uuid);
+            }
+            
+            var intersectionSceneChildUuid = intersectionObj.parent.uuid;
+            console.log('intersectionSceneChildUuid', intersectionSceneChildUuid);
+            
+            var intersectionLayer = _this.getIntersectionLayer(intersectionSceneChildUuid);
+            if(intersectionLayer === undefined)
+            {
+                console.log('intersectionLayer is undefined');
+                return;
+            }
+            
+            console.log('intersectionLayer', intersectionLayer);
+            
             // geom has "type: "BufferGeometry""
             var geom = intersectionObj.geometry;
             
@@ -753,8 +803,7 @@ var doEnableOverlayImageBoundaries = true;
                 // Calc the nearest image to the point
                 /////////////////////////////////////////////////////////////
 
-                var materialIndex2 = _threedModelAttributes.connectivity[0].materialIndices[indexInMaterialIndices];
-                var retVal = _this.calcNearestImage(faceIndex, materialIndex2, intersectionUvCoord);
+                var retVal = _this.calcNearestImage(intersectionLayer, faceIndex, materialIndex, intersectionUvCoord);
                 var wallIndex = retVal.wallIndex;
                 var imageIndex = retVal.imageIndex;
             }
@@ -783,33 +832,57 @@ var doEnableOverlayImageBoundaries = true;
                     // overlay closest image boundaries on 3d model in blue
                     /////////////////////////////////////////////////////////////////
 
-                    if(!_wallsInfo[wallIndex])
+                    var wallsInfo = intersectionLayer.getWallsInfo();
+                    
+                    if(!wallsInfo[wallIndex])
                     {
                         console.log('wallIndex', wallIndex);
-                        console.log('undefined _wallsInfo[wallIndex]'); 
+                        console.log('undefined wallsInfo[wallIndex]'); 
                         return;
                     }
                     
-                    var imageInfo = _wallsInfo[wallIndex].imagesInfo[imageIndex];
+                    var imageInfo = wallsInfo[wallIndex].imagesInfo[imageIndex];
 
+                    // e.g. 
                     // "room1/wall1/IMG_6841.JPG"
-                    var fileName = imageInfo.imageFileName;
-
-                    var materialName = _wallsInfo[wallIndex].materialName;
-                    // console.log('materialName', materialName);
+                    // ./floor0/wall_9/flatten_canvas.resized.jpg
+                    
+                    var fileName = imageInfo.imageFilename;
+                    console.log('fileName1', fileName);
+                    
+                    var materialName = wallsInfo[wallIndex].materialName;
+                    console.log('materialName', materialName);
 
                     // |room1.*/|
                     // room1/wall1/wall_fused.jpg -> room1/wall1/
 
-                    var reg = /room1.*\//g;
+                    // var reg = /room1.*\//g;
+                    // var matches = materialName.match(reg);
+                    // console.log('matches', matches); 
+                    // var wallDir = matches[0];
                     
-                    var matches = materialName.match(reg);
-                    console.log('matches', matches); 
-                    var match0 = matches[0];
-                    
+                    // Remove the filename in the directory (e.g. ./floor0/wall_9/flatten_canvas.resized.jpg -> ./floor0/wall_9)
+                    //
+                    // https://stackoverflow.com/questions/7601674/id-like-to-remove-the-filename-from-a-path-using-javascript?rq=1
+                    // '/this/is/a/folder/'
+                    var urlstr = '/this/is/a/folder/aFile.txt';
+                    var regexp1 = /[^\/]*$/;
+                    var wallDir = materialName.replace(regexp1, '');
+                    console.log('wallDir1', wallDir);
+                    console.log('materialName2', materialName);
 
-                    fileName = match0 + imageInfo.imageFileName;
-                    // console.log('fileName2', fileName); 
+
+                    console.log('imageInfo'); 
+                    console.log(imageInfo); 
+
+                    // // Remove the leading "./" in the directory (e.g. ./floor0/wall_9 -> floor0/wall_9)
+                    // var regexp2 = /^\.\//;
+                    // wallDir = wallDir.replace(regexp2, '');
+                    // console.log('wallDir2', wallDir);
+                    // fileName = wallDir + imageInfo.imageFilename;
+
+                    fileName = imageInfo.imageFilename;
+                    console.log('fileName2', fileName); 
 
                     var blobs = MLJ.core.Scene.getBlobs();
                     // console.log('blobs', blobs); 
@@ -840,11 +913,15 @@ var doEnableOverlayImageBoundaries = true;
 
     this.render = function (fromReqAnimFrame) {
 
-        /////////////////////////////////////////////////////////////////
-        // find intersections
-        /////////////////////////////////////////////////////////////////
+        // console.log('_controls.isKeyDown', _controls.isKeyDown); 
+        // if(_controls.isKeyDown)
+        {
+            /////////////////////////////////////////////////////////////////
+            // find intersections
+            /////////////////////////////////////////////////////////////////
 
-        _this.findIntersections();
+            _this.findIntersections();
+        }
 
         // END from example2_objLoader_raycasting.js
 

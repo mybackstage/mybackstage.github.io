@@ -738,13 +738,15 @@ MLJ.extend(MLJ.gui.component.Component, MLJ.gui.component.ToolBar);
  */
 MLJ.gui.component.Pane = function () {
 
-    var _html = '<div class="mlj-pane ui-widget-content"></div>';
+    var _html = '<div class="contain mlj-pane ui-widget-content"></div>';
 
     this._make = function () {
 
         this.$.css({
             height: "100%",
             width: "100%",
+            // object-fit: "contain",
+            // background-size: "contain",
             overflow: "auto"
         });
     };
