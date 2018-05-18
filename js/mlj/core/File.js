@@ -146,6 +146,7 @@ MLJ.core.File = {
         layer.texture = [];
         var textureIndex = 0;
         var textureName = "foo1a.png";
+        console.log('textureName', textureName); 
         
         var texture = new THREE.TextureLoader().load( textureName, function ( texture ) {
 	    // This anonymous function will be called when the texture has finished loading
