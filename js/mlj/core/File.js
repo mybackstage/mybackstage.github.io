@@ -84,17 +84,8 @@ MLJ.core.File = {
         //let's create the layer-dependent texture array
         var texture2 = new THREE.TextureLoader().load( textureFileName, function ( texture2 ) {
 	    // This anonymous function will be called when the texture2 has finished loading
-
-            // three js THREE.TextureLoader load from blob
-            // console.log('blobs["foo1a.png"]', blobs["foo1a.png"]); 
-            // console.log('blobs["foo1d.jpg"]', blobs["foo1d.jpg"]); 
-
-            
-            // console.log('BEG THREE.TextureLoader().load'); 
-            // console.log('texture2.image', texture2.image);
             
             var texWidth = texture2.image.width;
-            // var texWidth = 500;
             var texHeight = texture2.image.height;
             var format = THREE.RGBFormat;
             var texComponentsTitle = "RGB";
@@ -127,7 +118,7 @@ MLJ.core.File = {
                 data: sprite2
             };
             
-            console.log("Loading texture 1 " + textureFileName + " " + texWidth + "x" + texHeight + " " + texComponentsTitle);
+            console.log("Loading texture 2 " + textureFileName + " " + texWidth + "x" + texHeight + " " + texComponentsTitle);
 
             
             onTextureLoaded(true, texture2);
@@ -155,7 +146,6 @@ MLJ.core.File = {
             // console.log('texture.image', texture.image);
             
             var texWidth = texture.image.width;
-            // var texWidth = 500;
             var texHeight = texture.image.height;
             var format = THREE.RGBFormat;
             var texComponentsTitle = "RGB";
@@ -166,7 +156,6 @@ MLJ.core.File = {
             
             texture.needsUpdate = true; //We need to update the texture
             texture.minFilter = THREE.LinearFilter;   //Needed when texture is not a power of 2
-
             
             // https://stackoverflow.com/questions/36668836/threejs-displaying-a-2d-image
              var material2 = new THREE.SpriteMaterial( { map: texture, color: 0xffffff, fog: true } );
@@ -361,7 +350,10 @@ MLJ.core.File = {
                 
                 layer.setWallsInfoUuid(object.uuid);
 
-                _this.loadTextureImage1(layer, onLoaded);
+                // _this.loadTextureImage1(layer, onLoaded);
+                layer.texture = [];
+                onLoaded(true, layer);
+                
 	    } );
 
 	});
