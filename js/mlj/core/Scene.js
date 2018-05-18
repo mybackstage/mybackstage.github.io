@@ -700,11 +700,14 @@ var doEnableOverlayImageBoundaries = true;
         // }
 
         // find intersection layer - take2
+        console.log('_layers.size()', _layers.size());
         var iter = _layers.iterator();
 
         console.log('intersectionSceneChildUuid', intersectionSceneChildUuid);
+        var iterIndex = 0;
         // Iterating over all the layers
         while (iter.hasNext()) {
+            console.log('iterIndex', iterIndex);
             var layer = iter.next();
             var wallsInfoUuid = layer.getWallsInfoUuid();
             console.log('wallsInfoUuid', wallsInfoUuid);
@@ -714,6 +717,7 @@ var doEnableOverlayImageBoundaries = true;
                 console.log('find intersection layer - take2'); 
                 return layer;
             }
+            iterIndex += 1;
         }
         
         // shouldn't reach here
