@@ -210,174 +210,214 @@ MLJ.core.File = {
 
         return data;
     };
-    
-    this.loadZipFile = function (zipLoader, archiveFileName, layer, onLoaded) {
-        console.log('BEG loadZipFile');
-        console.log("archiveFileName: " + archiveFileName);
+
+    this.processZipFiles = function (promiseObject, layer, onLoaded) {
+        filenames = Object.keys(promiseObject.files);
+        console.log( 'filenames: ' );
+        console.log( filenames );
+        
+        // loop over keys
+        var blobs = MLJ.core.Scene.getBlobs();
+        console.log('blobs.length1', Object.keys(blobs).length);
+        
 
         
-        zipLoader.on( 'load', function ( e ) {
+        var mtlFileName;
+        var objFileName;
 
-            console.log( 'Loading file: ', archiveFileName );
-            filenames = Object.keys(zipLoader.files);
-            console.log( 'filenames: ' );
-            console.log( filenames );
-            
-            // loop over keys
-            var blobs = MLJ.core.Scene.getBlobs();
-            console.log('blobs.length1', Object.keys(blobs).length);
-            
+        var wallsInfo = [];
 
-            
-            var mtlFileName;
-            var objFileName;
+        for (var key in filenames)
+        {
+            filename = filenames[key];
+            // console.log( 'filename: ' + filename );
 
-            var wallsInfo = [];
+            var fileExtention = getFileExtention(filename);
 
-            for (var key in filenames)
-            {
-                filename = filenames[key];
-                // console.log( 'filename: ' + filename );
-
-                var fileExtention = getFileExtention(filename);
-
-                switch(fileExtention) {
-                    case "":
-                        // e.g. skip directory names
-                        break;
-                    case "zip":
-                        console.log( 'create layer with name: ' + filename );
-                        var layer1 = MLJ.core.Scene.createLayer(filename);
-                        layer1.fileName = filename;
-                            
-                        var zipLoader1 = new ZipLoader( filename );
-                        console.log('zipLoader1', zipLoader1);
-                        
-                        _this.loadZipFile(zipLoader1, filename, layer1, onLoaded);
-                        break;
-                    case "jpg":
-                    case "jpeg":
-                    case "JPG":
-                    // case "png":
-                        blobs[filename] = zipLoader.extractAsBlobUrl( filename, 'image/jpeg' );
-                        // console.log('blobs[filename]', blobs[filename]); 
-                        break;
-                    case "mtl":
-                        blobs[filename] = zipLoader.extractAsBlobUrl( filename, 'text/plain' );
-                        mtlFileName = filename;
-                        break;
-                    case "obj":
-                        blobs[filename] = zipLoader.extractAsBlobUrl( filename, 'text/plain' );
-                        objFileName = filename;
-                        break;
-                    case "pto":
-                        break;
-                    case "json":
-                        blobs[filename] = zipLoader.extractAsBlobUrl( filename, 'text/plain' );
-
-                        // e.g.
-                        // floor0/wall_24/wall_image_attributes2.json
-                        // console.log( 'filename: ' + filename );
-
-                        var re1 = /wall_image_attributes2/;
-                        var regex1_matched = filename.match(re1);
-                        if(regex1_matched)
-                        {
-                            console.log('regex1_matched');
-                            console.log('filename4', filename); 
-                            console.log('blobs[filename]', blobs[filename]);
-                            var wallInfo = _this.loadJson(blobs[filename]);
-
-                            wallsInfo.push(wallInfo);
-                        }
-                        else
-                        {
-                            // should not reach here
-                            console.error('Found json file that is not wall info');
-                        }
-                        
-                        break;
-                    default:
-                        var msgStr = 'fileExtension: ' + fileExtention + ' in .zip file is not supported';
-                        console.log( msgStr );
-                        return;
-                        throw msgStr;
-                        break;
-                }
-            }
-
-            MLJ.core.Scene.setBlobs(blobs);
-            console.log('blobs.length2', Object.keys(blobs).length);
-
-            if(objFileName === undefined)
-            {
-                console.log('objFileName is undefined');
-                return 0;
-            }
-
-            console.log('wallsInfo4', wallsInfo);
-            console.log('layer.name4', layer.name);
-            
-            layer.setWallsInfo(wallsInfo);
-            
-            // console.log('blobs', blobs);
-            console.log( 'mtlFileName: ' + mtlFileName );
-            console.log( 'objFileName: ' + objFileName );
-
-            var loadingManager = new THREE.LoadingManager();
-
-            // Initialize loading manager with URL callback.
-            var objectURLs = [];
-            loadingManager.setURLModifier( ( url ) => {
-                console.log('url1', url); 
-                if(!blobs[ url ])
-                {
-                    url = url.replace(/\.\//i, '');
-                    console.log('url3', url); 
-                }
-
-	        url = blobs[ url ];
-                console.log('url2', url); 
-	        objectURLs.push( url );
-	        return url;
-            } );
-            
-            var mtlLoader = new THREE.MTLLoader(loadingManager);
-            mtlLoader.setMaterialOptions( {side: THREE.DoubleSide} );
-            
-	    mtlLoader.load( mtlFileName, function( materials ) {
-	        materials.preload();
-
-	        var objLoader = new THREE.OBJLoader(loadingManager);
-	        objLoader.setMaterials( materials );
-
-                objLoader.load( objFileName, function ( object ) {
-                    object.traverse(function ( child ) {
-                        if( child.material ) {
-                            child.material.side = THREE.DoubleSide;
-                        }
-                        if ( child instanceof THREE.Mesh ) {
-                            child.geometry.computeBoundingBox();
-                            object.bBox = child.geometry.boundingBox;
-                        }
-                    });
-                    object2 = object;
-                    console.log('object.uuid', object.uuid);
-                    MLJ.core.Scene.add( object );
+            switch(fileExtention) {
+                case "":
+                    // e.g. skip directory names
+                    break;
+                    // case "zip":
+                    //     console.log( 'create layer with name: ' + filename );
+                    //     var layer1 = MLJ.core.Scene.createLayer(filename);
+                    //     layer1.fileName = filename;
                     
-                    layer.setWallsInfoUuid(object.uuid);
+                    //     var zipLoader1 = new ZipLoader( filename );
+                    //     console.log('zipLoader1', zipLoader1);
+                    
+                    //     _this.loadZipFile(zipLoader1, filename, layer1, onLoaded);
+                    //     break;
+                case "jpg":
+                case "jpeg":
+                case "JPG":
+                    // case "png":
+                    blobs[filename] = promiseObject.extractAsBlobUrl( filename, 'image/jpeg' );
+                    // console.log('blobs[filename]', blobs[filename]); 
+                    break;
+                case "mtl":
+                    blobs[filename] = promiseObject.extractAsBlobUrl( filename, 'text/plain' );
+                    mtlFileName = filename;
+                    break;
+                case "obj":
+                    blobs[filename] = promiseObject.extractAsBlobUrl( filename, 'text/plain' );
+                    objFileName = filename;
+                    break;
+                case "pto":
+                    break;
+                case "json":
+                    blobs[filename] = promiseObject.extractAsBlobUrl( filename, 'text/plain' );
 
-                    _this.loadTextureImage1(layer, onLoaded);
-	        } );
+                    // e.g.
+                    // floor0/wall_24/wall_image_attributes2.json
+                    // console.log( 'filename: ' + filename );
 
-	    });
+                    var re1 = /wall_image_attributes2/;
+                    var regex1_matched = filename.match(re1);
+                    if(regex1_matched)
+                    {
+                        console.log('regex1_matched');
+                        console.log('filename4', filename); 
+                        console.log('blobs[filename]', blobs[filename]);
+                        var wallInfo = _this.loadJson(blobs[filename]);
 
-            MLJ.core.Scene.render();
+                        wallsInfo.push(wallInfo);
+                    }
+                    else
+                    {
+                        // should not reach here
+                        console.error('Found json file that is not wall info');
+                    }
+                    
+                    break;
+                default:
+                    var msgStr = 'fileExtension: ' + fileExtention + ' in .zip file is not supported';
+                    console.log( msgStr );
+                    return;
+                    throw msgStr;
+                    break;
+            }
+        }
 
+        MLJ.core.Scene.setBlobs(blobs);
+        console.log('blobs.length2', Object.keys(blobs).length);
+
+        if(objFileName === undefined)
+        {
+            console.log('objFileName is undefined');
+            return 0;
+        }
+
+        console.log('wallsInfo4', wallsInfo);
+        console.log('layer.name4', layer.name);
+        
+        layer.setWallsInfo(wallsInfo);
+        
+        // console.log('blobs', blobs);
+        console.log( 'mtlFileName: ' + mtlFileName );
+        console.log( 'objFileName: ' + objFileName );
+
+        var loadingManager = new THREE.LoadingManager();
+
+        // Initialize loading manager with URL callback.
+        var objectURLs = [];
+        loadingManager.setURLModifier( ( url ) => {
+            console.log('url1', url); 
+            if(!blobs[ url ])
+            {
+                url = url.replace(/\.\//i, '');
+                console.log('url3', url); 
+            }
+
+	    url = blobs[ url ];
+            console.log('url2', url); 
+	    objectURLs.push( url );
+	    return url;
         } );
+        
+        var mtlLoader = new THREE.MTLLoader(loadingManager);
+        mtlLoader.setMaterialOptions( {side: THREE.DoubleSide} );
+        
+	mtlLoader.load( mtlFileName, function( materials ) {
+	    materials.preload();
 
-        zipLoader.load();
+	    var objLoader = new THREE.OBJLoader(loadingManager);
+	    objLoader.setMaterials( materials );
 
+            objLoader.load( objFileName, function ( object ) {
+                object.traverse(function ( child ) {
+                    if( child.material ) {
+                        child.material.side = THREE.DoubleSide;
+                    }
+                    if ( child instanceof THREE.Mesh ) {
+                        child.geometry.computeBoundingBox();
+                        object.bBox = child.geometry.boundingBox;
+                    }
+                });
+                object2 = object;
+                console.log('object.uuid', object.uuid);
+                MLJ.core.Scene.add( object );
+                
+                layer.setWallsInfoUuid(object.uuid);
+
+                _this.loadTextureImage1(layer, onLoaded);
+	    } );
+
+	});
+
+        MLJ.core.Scene.render();
+    };
+
+    this.loadZipFile = function (file, layer, onLoaded) {
+        console.log('BEG loadZipFile');
+
+        console.log("file.name: " + file.name);
+
+        // BEG take1
+        // var zipLoader = new ZipLoader( file.name );
+
+        // console.log('zipLoader', zipLoader);
+        
+        // zipLoader.on( 'load', function ( e ) {
+        //     console.log( 'Processing elements of file: ', file.name );
+        //     _this.processZipFiles(zipLoader, layer, onLoaded);
+        // } );
+
+        // zipLoader.load();
+        // END take1
+
+        // BEG take2
+        console.log('file', file);
+        ZipLoader.unzip( file ).then( function ( promiseObject ) {
+            console.log('promiseObject', promiseObject);
+            _this.processZipFiles(promiseObject, layer, onLoaded);
+	});
+
+        // END take2
+
+
+        
+        // BEG take3
+        
+        // ZipLoader.unzip( file ).then( function ( unziped ) {
+
+	// 	Object.keys( unziped.files ).forEach( ( fileName ) => {
+
+	// 		if ( unziped.files[ fileName ].buffer.length === 0 ) return;
+
+	// 		const $div = document.createElement( 'div' );
+	// 		const $a = document.createElement( 'a' );
+	// 		$a.textContent = fileName;
+	// 		$a.href = unziped.extractAsBlobUrl( fileName );
+	// 		$div.appendChild( $a );
+	// 		document.body.appendChild( $div );
+
+	// 	} );
+
+	// } );
+        
+        // END take3
+        
         return 0;
     }
 
@@ -387,8 +427,8 @@ MLJ.core.File = {
      * Loads 'file' in the virtual file system as an Int8Array and reads it into the layer 'layer'
      */
     this.loadMeshDataFromFile = function (file, layer, onLoaded) {
+        console.log('BEG loadMeshDataFromFile'); 
 
-        console.log('file', file);
         var fileReader = new FileReader();
         fileReader.readAsArrayBuffer(file);
         fileReader.onloadend = function (fileLoadedEvent) {
@@ -397,9 +437,7 @@ MLJ.core.File = {
             var resOpen = -1;
             if (file.name.split('.').pop() === "zip")
             {
-                var zipLoader = new ZipLoader( file.name );
-                console.log('zipLoader', zipLoader);
-                resOpen = _this.loadZipFile(zipLoader, file.name, layer, onLoaded);
+                resOpen = _this.loadZipFile(file, layer, onLoaded);
             }
         };
     }
@@ -413,7 +451,7 @@ MLJ.core.File = {
      * @author Stefano Gabriele
      */
     this.openMeshFile = function (toOpen) {
-        // console.log('BEG openMeshFile'); 
+        console.log('BEG openMeshFile'); 
         // console.log('toOpen', toOpen); 
 
         // console.time("Read mesh file");
