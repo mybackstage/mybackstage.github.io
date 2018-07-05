@@ -201,7 +201,35 @@ MLJ.core.File = {
         return data;
     };
 
-    this.processZipFiles = function (promiseObject, layer, onLoaded) {
+    this.processFileInZipFile = function (promiseObject) {
+        filenames = Object.keys(promiseObject.files);
+
+        // loop over keys
+        var blobs = MLJ.core.Scene.getBlobs();
+        console.log('blobs.length1', Object.keys(blobs).length);
+        
+        for (var key in filenames)
+        {
+            filename = filenames[key];
+            console.log( 'filename3: ' + filename );
+
+            var fileExtention = getFileExtention(filename);
+
+            switch(fileExtention) {
+                case "JPG":
+                    blobs[filename] = promiseObject.extractAsBlobUrl( filename, 'image/jpeg' );
+                    console.log('blobs[filename]', blobs[filename]); 
+
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+    };
+
+    this.processZipFiles = function (promiseObject, layer, onLoaded, doSkipJPG) {
         filenames = Object.keys(promiseObject.files);
         console.log( 'filenames: ' );
         console.log( filenames );
@@ -220,7 +248,7 @@ MLJ.core.File = {
         for (var key in filenames)
         {
             filename = filenames[key];
-            // console.log( 'filename: ' + filename );
+            console.log( 'filename3: ' + filename );
 
             var fileExtention = getFileExtention(filename);
 
@@ -236,13 +264,26 @@ MLJ.core.File = {
                     //     var zipLoader1 = new ZipLoader( filename );
                     //     console.log('zipLoader1', zipLoader1);
                     
-                    //     _this.loadZipFile(zipLoader1, filename, layer1, onLoaded);
+                    //     _this.loadZipFile3(zipLoader1, filename, layer1, onLoaded);
                     //     break;
                 case "jpg":
                 case "jpeg":
                 case "JPG":
-                    // case "png":
-                    blobs[filename] = promiseObject.extractAsBlobUrl( filename, 'image/jpeg' );
+                    if(doSkipJPG)
+                    {
+                        var re1 = /flatten_canvas/;
+                        var regex1_matched = filename.match(re1);
+                        if(regex1_matched)
+                        {
+                            console.log('regex1_matched');
+                            blobs[filename] = promiseObject.extractAsBlobUrl( filename, 'image/jpeg' );
+                        }
+                    }
+                    else
+                    {
+                        blobs[filename] = promiseObject.extractAsBlobUrl( filename, 'image/jpeg' );
+                    }
+
                     // console.log('blobs[filename]', blobs[filename]); 
                     break;
                 case "mtl":
@@ -266,9 +307,9 @@ MLJ.core.File = {
                     var regex1_matched = filename.match(re1);
                     if(regex1_matched)
                     {
-                        console.log('regex1_matched');
-                        console.log('filename4', filename); 
-                        console.log('blobs[filename]', blobs[filename]);
+                        // console.log('regex1_matched');
+                        // console.log('filename4', filename); 
+                        // console.log('blobs[filename]', blobs[filename]);
                         var wallInfo = _this.loadJson(blobs[filename]);
 
                         wallsInfo.push(wallInfo);
@@ -312,15 +353,15 @@ MLJ.core.File = {
         // Initialize loading manager with URL callback.
         var objectURLs = [];
         loadingManager.setURLModifier( ( url ) => {
-            console.log('url1', url); 
+            // console.log('url1', url); 
             if(!blobs[ url ])
             {
                 url = url.replace(/\.\//i, '');
-                console.log('url3', url); 
+                // console.log('url3', url); 
             }
 
 	    url = blobs[ url ];
-            console.log('url2', url); 
+            // console.log('url2', url); 
 	    objectURLs.push( url );
 	    return url;
         } );
@@ -359,61 +400,21 @@ MLJ.core.File = {
 	});
 
         MLJ.core.Scene.render();
+
+        console.log('END this.processZipFiles');         
+        return promiseObject;
     };
 
-    this.loadZipFile = function (file, layer, onLoaded) {
+    this.loadZipFile = function (arrayBuffer, layer, onLoaded, doSkipJPG) {
         console.log('BEG loadZipFile');
 
-        console.log("file.name: " + file.name);
-
-        // BEG take1
-        // var zipLoader = new ZipLoader( file.name );
-
-        // console.log('zipLoader', zipLoader);
-        
-        // zipLoader.on( 'load', function ( e ) {
-        //     console.log( 'Processing elements of file: ', file.name );
-        //     _this.processZipFiles(zipLoader, layer, onLoaded);
-        // } );
-
-        // zipLoader.load();
-        // END take1
-
-        // BEG take2
-        console.log('file', file);
-        ZipLoader.unzip( file ).then( function ( promiseObject ) {
+        ZipLoader.unzip( arrayBuffer, doSkipJPG ).then( function ( promiseObject ) {
             console.log('promiseObject', promiseObject);
-            _this.processZipFiles(promiseObject, layer, onLoaded);
-	});
-
-        // END take2
-
-
-        
-        // BEG take3
-        
-        // ZipLoader.unzip( file ).then( function ( unziped ) {
-
-	// 	Object.keys( unziped.files ).forEach( ( fileName ) => {
-
-	// 		if ( unziped.files[ fileName ].buffer.length === 0 ) return;
-
-	// 		const $div = document.createElement( 'div' );
-	// 		const $a = document.createElement( 'a' );
-	// 		$a.textContent = fileName;
-	// 		$a.href = unziped.extractAsBlobUrl( fileName );
-	// 		$div.appendChild( $a );
-	// 		document.body.appendChild( $div );
-
-	// 	} );
-
-	// } );
-        
-        // END take3
-        
-        return 0;
-    }
-
+            MLJ.core.Scene._zipLoaderPromiseObject = _this.processZipFiles(promiseObject, layer, onLoaded, doSkipJPG);
+            console.log('MLJ.core.Scene._zipLoaderPromiseObject', MLJ.core.Scene._zipLoaderPromiseObject);
+            
+        });
+    };
 
     
     /**
@@ -430,9 +431,15 @@ MLJ.core.File = {
             var resOpen = -1;
             if (file.name.split('.').pop() === "zip")
             {
-                resOpen = _this.loadZipFile(file, layer, onLoaded);
+                var doSkipJPG = true;
+                console.log("file.name: " + file.name);
+
+                MLJ.core.Scene._zipFileArrayBuffer = fileLoadedEvent.target.result;
+                resOpen = _this.loadZipFile(MLJ.core.Scene._zipFileArrayBuffer, layer, onLoaded, doSkipJPG);
             }
         };
+
+
     }
 
     

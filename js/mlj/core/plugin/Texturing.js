@@ -36,20 +36,20 @@ MLJ.core.plugin.Texturing = function (parameters, defaults) {
 
         var blobs = MLJ.core.Scene.getBlobs();
         
-        if((globalIndex % 2) === 0)
-        {
-            console.log('globalIndex is pair');
-            var textureName = blobs["foo1a.png"];
+        // if((globalIndex % 2) === 0)
+        // {
+        //     console.log('globalIndex is pair');
+        //     var textureName = blobs["foo1a.png"];
 
-            MLJ.core.File.loadTexture2FromFile(textureName);
-        }
-        else
-        {
-            console.log('globalIndex is ODD'); 
-            var textureName = blobs["foo1d.jpg"];
+        //     MLJ.core.File.loadTexture2FromFile(textureName);
+        // }
+        // else
+        // {
+        //     console.log('globalIndex is ODD'); 
+        //     var textureName = blobs["foo1d.jpg"];
 
-            MLJ.core.File.loadTexture2FromFile(textureName);
-        }
+        //     MLJ.core.File.loadTexture2FromFile(textureName);
+        // }
         
         // update parameter
         var layer = MLJ.core.Scene.getSelectedLayer();

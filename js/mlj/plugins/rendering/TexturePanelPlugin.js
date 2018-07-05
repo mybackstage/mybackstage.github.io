@@ -230,8 +230,8 @@ var animationDuration = 200;
             // var txtFile = "3543_W18_shimi.SM.zip"
             // var txtFile = "2910_w47_shertzer_section0.6a_reduceTextureIndices.zip"
             // var txtFile = "2910_w47_shertzer_section0.6a_reduceTextureIndices.floor0.zip"
-            var txtFile = "2910_w47_shertzer_section0.6a_reduceTextureIndices.floor0_sm.zip"
-            // var txtFile = "2910_w47_shertzer_section0.6a_reduceTextureIndices.floor1_sm.zip"
+            // var txtFile = "2910_w47_shertzer_section0.6a_reduceTextureIndices.floor0_sm.zip"
+            var txtFile = "2910_w47_shertzer_section1.6a_reduceTextureIndices.floor1_sm.zip";
             
             var file1 = new File([""], txtFile, {type: "application/zip"})
             // console.log('file1', file1); 

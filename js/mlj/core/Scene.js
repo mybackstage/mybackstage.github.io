@@ -11,10 +11,7 @@ var doEnableOverlayImageBoundaries = true;
 // doEnableOverlayImageBoundaries = false;
 
 (function () {
-    // place _wallsInfo in _layers (=== _floorsInfo) ???
-    // var _wallsInfo;
     var _layers = new MLJ.util.AssociativeArray();
-    
     var _decorators = new MLJ.util.AssociativeArray();
     var _scene;
     var _group;
@@ -30,6 +27,8 @@ var doEnableOverlayImageBoundaries = true;
     var _selectedImageGeometry;    
     var _selectedImageLineSegments;
     var _blobs = {};
+    var _zipFileArrayBuffer;
+    var _zipLoaderPromiseObject = -1;
     
     function onDocumentMouseMove( event ) {
         // console.log("BEG onDocumentMouseMove");
@@ -201,21 +200,20 @@ var doEnableOverlayImageBoundaries = true;
             MLJ.core.Scene.render();
         });
 
-        $(document).on("MeshFileOpened",
-                       function (event, layer) {
-                           // console.log('Received event "MeshFileOpened"'); 
+        $(document).on("MeshFileOpened", function (event, layer) {
+            // console.log('Received event "MeshFileOpened"'); 
 
-                           if(doEnableOverlayImageBoundaries)
-                           {
-                               /////////////////////////////////////////////////////////////////
-                               // overlay images boundaries on 3d model
-                               /////////////////////////////////////////////////////////////////
+            if(doEnableOverlayImageBoundaries)
+            {
+                /////////////////////////////////////////////////////////////////
+                // overlay images boundaries on 3d model
+                /////////////////////////////////////////////////////////////////
 
-                               var materialYellow = new THREE.LineBasicMaterial({color: 0xffff00});
-                               _this.overlayWallsImagesBoundariesOn3dModel(layer, materialYellow);
-                           }
-                           MLJ.core.Scene.addLayer(layer);
-                       });
+                var materialYellow = new THREE.LineBasicMaterial({color: 0xffff00});
+                _this.overlayWallsImagesBoundariesOn3dModel(layer, materialYellow);
+            }
+            MLJ.core.Scene.addLayer(layer);
+        });
 
         $(document).on("MeshFileReloaded",
                 function (event, layer) {
@@ -688,7 +686,9 @@ var doEnableOverlayImageBoundaries = true;
 
     this.getIntersectionLayer = function (intersectionSceneChildUuid) {
 
-        console.log('BEG getIntersectionLayer');
+        // console.log('BEG getIntersectionLayer');
+
+
         // // find intersection layer - take1
         // for (var i = 0; i < _layers.size(); i++) {
         //     var layer = _layers[i];
@@ -700,21 +700,21 @@ var doEnableOverlayImageBoundaries = true;
         // }
 
         // find intersection layer - take2
-        console.log('_layers.size()', _layers.size());
+        // console.log('_layers.size()', _layers.size());
         var iter = _layers.iterator();
 
-        console.log('intersectionSceneChildUuid', intersectionSceneChildUuid);
+        // console.log('intersectionSceneChildUuid', intersectionSceneChildUuid);
         var iterIndex = 0;
         // Iterating over all the layers
         while (iter.hasNext()) {
-            console.log('iterIndex', iterIndex);
+            // console.log('iterIndex', iterIndex);
             var layer = iter.next();
             var wallsInfoUuid = layer.getWallsInfoUuid();
-            console.log('wallsInfoUuid', wallsInfoUuid);
+            // console.log('wallsInfoUuid', wallsInfoUuid);
             
             if(wallsInfoUuid === intersectionSceneChildUuid)
             {
-                console.log('find intersection layer - take2'); 
+                // console.log('find intersection layer - take2'); 
                 return layer;
             }
             iterIndex += 1;
@@ -783,7 +783,7 @@ var doEnableOverlayImageBoundaries = true;
             }
             
             var intersectionSceneChildUuid = intersectionObj.parent.uuid;
-            console.log('intersectionSceneChildUuid', intersectionSceneChildUuid);
+            // console.log('intersectionSceneChildUuid', intersectionSceneChildUuid);
             
             var intersectionLayer = _this.getIntersectionLayer(intersectionSceneChildUuid);
             if(intersectionLayer === undefined)
@@ -792,7 +792,7 @@ var doEnableOverlayImageBoundaries = true;
                 return;
             }
             
-            console.log('intersectionLayer', intersectionLayer);
+            // console.log('intersectionLayer', intersectionLayer);
             
             // geom has "type: "BufferGeometry""
             var geom = intersectionObj.geometry;
@@ -851,11 +851,11 @@ var doEnableOverlayImageBoundaries = true;
                     // "room1/wall1/IMG_6841.JPG"
                     // ./floor0/wall_9/flatten_canvas.resized.jpg
                     
-                    var fileName = imageInfo.imageFilename;
-                    console.log('fileName1', fileName);
+                    // var fileName = imageInfo.imageFilename;
+                    // console.log('fileName1', fileName);
                     
                     var materialName = wallsInfo[wallIndex].materialName;
-                    console.log('materialName', materialName);
+                    // console.log('materialName', materialName);
 
                     // |room1.*/|
                     // room1/wall1/wall_fused.jpg -> room1/wall1/
@@ -869,7 +869,7 @@ var doEnableOverlayImageBoundaries = true;
                     //
                     // https://stackoverflow.com/questions/7601674/id-like-to-remove-the-filename-from-a-path-using-javascript?rq=1
                     // '/this/is/a/folder/'
-                    var urlstr = '/this/is/a/folder/aFile.txt';
+                    // var urlstr = '/this/is/a/folder/aFile.txt';
                     var regexp1 = /[^\/]*$/;
                     var wallDir = materialName.replace(regexp1, '');
                     console.log('wallDir1', wallDir);
@@ -885,18 +885,51 @@ var doEnableOverlayImageBoundaries = true;
                     // console.log('wallDir2', wallDir);
                     // fileName = wallDir + imageInfo.imageFilename;
 
-                    fileName = imageInfo.imageFilename;
-                    console.log('fileName2', fileName); 
+                    var imageFilename = imageInfo.imageFilename;
+                    console.log('imageFilename', imageFilename); 
 
                     var blobs = MLJ.core.Scene.getBlobs();
                     // console.log('blobs', blobs); 
                     
-                    console.log('blobs[fileName]', blobs[fileName]); 
+                    console.log('blobs[imageFilename]', blobs[imageFilename]); 
 
-                    if(blobs[fileName])
+                    // // REmoveME:
+                    // imageFilename = 'floor2/wall_21/IMG_7464.JPG'; 
+                    
+                    // render the image
+                    if(blobs[imageFilename])
                     {
-                        MLJ.core.File.loadTexture2FromFile(blobs[fileName]);
+                        console.log('blobs22[' + imageFilename + '] is defined'); 
+
+                        MLJ.core.File.loadTexture2FromFile(blobs[imageFilename]);
                     }
+                    else
+                    {
+                        console.log('blobs22[' + imageFilename + '] is UNDEFINED2'); 
+                        console.log('MLJ.core.Scene._zipLoaderPromiseObject', MLJ.core.Scene._zipLoaderPromiseObject);
+                        var zipLoaderPromiseObject = MLJ.core.Scene._zipLoaderPromiseObject;
+                        console.log('zipLoaderPromiseObject', zipLoaderPromiseObject);
+                        
+                        console.log('zipLoaderPromiseObject.files[imageFilename].offset', imageFilename, zipLoaderPromiseObject.files[imageFilename].offset);
+                        var offsetInReader = zipLoaderPromiseObject.files[imageFilename].offset;
+                        
+                        if(offsetInReader > 0)
+                        {
+                            // unzip the image files of specific wall (that were skipped in the initial load)
+
+                            // console.log('MLJ.core.Scene._zipFileArrayBuffer', MLJ.core.Scene._zipFileArrayBuffer); 
+
+                            var doSkipJPG = false;
+                            ZipLoader.unzip( MLJ.core.Scene._zipFileArrayBuffer, doSkipJPG, offsetInReader ).then( function ( promiseObject ) {
+                                console.log('promiseObject3', promiseObject);
+                                promiseObject2 = MLJ.core.File.processFileInZipFile(promiseObject);
+                                MLJ.core.File.loadTexture2FromFile(blobs[imageFilename]);
+                            });
+
+                            
+                        }
+                    }
+
                     
                     var materialBlue = new THREE.LineBasicMaterial({color: 0x0000ff, linewidth: 5});
                     _this.overlayWallImageBoundariesOn3dModel(imageInfo, materialBlue);
