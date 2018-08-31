@@ -1,4 +1,11 @@
+////////////////////////////////////////////////////////////////
+//
+// This file (js/mlj/core/plugin/Texturing.js) is responsible to do ???
+//
+// for comparison the file MLJ.core.plugin.TexturePanelPlugin.js (in mlj/plugins/rendering/) does xxx
+////////////////////////////////////////////////////////////////
 
+    
 var globalIndex = 0;
 MLJ.core.plugin.Texturing = function (parameters, defaults) {
 
@@ -28,45 +35,21 @@ MLJ.core.plugin.Texturing = function (parameters, defaults) {
     this._setOnParamChange = guiBuilder.setOnParamChange;
 
     this._setOnParamChange(function (paramProp, value) {
-        console.log('BEG Texturing::_setOnParamChange');
-        // console.log('value', value);
         
         globalIndex++;
-        // console.log('globalIndex', globalIndex); 
 
-        var blobs = MLJ.core.Scene.getBlobs();
-        
-        // if((globalIndex % 2) === 0)
-        // {
-        //     console.log('globalIndex is pair');
-        //     var textureName = blobs["foo1a.png"];
-
-        //     MLJ.core.File.loadTexture2FromFile(textureName);
-        // }
-        // else
-        // {
-        //     console.log('globalIndex is ODD'); 
-        //     var textureName = blobs["foo1d.jpg"];
-
-        //     MLJ.core.File.loadTexture2FromFile(textureName);
-        // }
-        
         // update parameter
         var layer = MLJ.core.Scene.getSelectedLayer();
         if (layer === undefined)
             return;
 
         //the selectedTexture param is layer-dependent and not texture-dependent
-        console.log('paramProp', paramProp); 
         if (paramProp === "selectedTexture") {
             if (value <= layer.texturesNum) //Fix in case the other texture had more texture than the new one
                 layer.selectedTexture = value;
             else
                 layer.selectedTexture = 0;
         } else {
-            console.log('layer.texture', layer.texture);
-            console.log('layer.selectedTexture', layer.selectedTexture); 
-            console.log('layer.texture[layer.selectedTexture]', layer.texture[layer.selectedTexture]);
             
         }
         if (jQuery.isFunction(paramProp)) { //is 'bindTo' property a function?
@@ -82,7 +65,6 @@ MLJ.core.plugin.Texturing = function (parameters, defaults) {
 
         update();
         _this._applyTo(layer, 1, $);
-        // console.log('Texturing::END Received event "SceneLayerAdded"'); 
     });
 
     $(document).on("SceneLayerSelected", function (event, layer) {
@@ -102,9 +84,7 @@ MLJ.core.plugin.Texturing = function (parameters, defaults) {
             return;
 
         layer.texture[0] = texture2;
-        console.log('layer.texture[0]', layer.texture[0]);
         
-        console.log('Received event "Texture2FileOpened"'); 
         if (MLJ.core.Scene.getLayers().size() === 1)
         {
             pane.$.show();
@@ -116,7 +96,7 @@ MLJ.core.plugin.Texturing = function (parameters, defaults) {
 
 
     function update() {
-        console.log('BEG Texturing::update'); 
+        // console.log('BEG Texturing::update'); 
     }
 };
 MLJ.extend(MLJ.core.plugin.Plugin, MLJ.core.plugin.Texturing);

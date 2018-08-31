@@ -3371,7 +3371,6 @@
 		     var file = parseLocalFile(reader, doSkipJPG);
 		     files[file.name] = { buffer: file.buffer, offset: file.offset };
 	             return files;
-                     
                  }
 
              };
@@ -3433,7 +3432,6 @@
 	             compressedData[i] = reader.readBytes(1);
 	         }
 
-                 
                  // console.log('compression method', compression); 
 	         switch (compression) {
 
@@ -3446,7 +3444,6 @@
 	             default:
 		         console.log(filename.join('') + ': unsupported compression type');
 		         data = compressedData;
-
 	         }
 
 	         return {
@@ -3455,8 +3452,6 @@
 	             buffer: data
 	         };
              };
-
-
 
              // # Local file header
              // 
@@ -3618,12 +3613,9 @@
 
              var ZipLoader = function () {
 
-
 	         ZipLoader.unzip = function unzip(arrayBuffer, doSkipJPG, offsetinreader) {
-                     console.log('BEG unzip'); 
+                     // console.log('BEG unzip'); 
 	             return new PromiseLike$1(function (resolve) {
-                         console.log('BEG PromiseLike$1'); 
-
 		         var instance = new ZipLoader();
 
 		         // var arrayBuffer = event.target.result;
@@ -3632,7 +3624,6 @@
 
 	             });
 	         };
-
 
 	         function ZipLoader(url) {
 	             _classCallCheck$2(this, ZipLoader);

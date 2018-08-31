@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////////////////
+//
+// This file (js/mlj/plugins/rendering/TexturePanelPlugin.js) is responsible to handle the GUI for the Texturing tab
+// e.g. resize the texture when zooming in/out with the middle mouse button
+//
+// for comparison the file MLJ.core.plugin.Texturing.js (in mlj/core/plugin/) does xxx
+////////////////////////////////////////////////////////////////
+
 var animationDuration = 200;
 
 (function (plugin, core, scene) {
@@ -19,7 +27,6 @@ var animationDuration = 200;
     var widgets;
 
     plug._init = function (guiBuilder) {
-        // console.log('BEG TexturePanelPlugin::init'); 
         widgets = [];
         hideWidgets();
         canvasInit();
@@ -27,13 +34,15 @@ var animationDuration = 200;
 
 
     plug._applyTo = function (layer, layersNum, $) {
-        console.log('BEG TexturePanelPlugin::plug._applyTo'); 
+        // // RemoveME:
+        // console.clear();
 
         //if the array has been defined then there was at least a texture, for now, we are gonna show ONLY the first one
+        layer.texturesNum = 0;
         if (layer.texture.length > 0) {
             layer.texturesNum = 1;
         }
-
+        
         // remove?
         scene.render();
 
@@ -47,24 +56,20 @@ var animationDuration = 200;
             texScene.remove(texScene.children[i]);
         }
 
+        // console.log('layer.texture.length', layer.texture.length);
+        // console.log('layer.texturesNum', layer.texturesNum);
+        // console.log('layersNum', layersNum);
+        
         if (layer.texturesNum > 0 && layersNum > 0) {
 
             showWidgets();
 
             for (var i = 0; i < layer.texturesNum; i++) {
-                // var texWidth = layer.texture[i].width;
-                // var texHeight = layer.texture[i].height;
-                // var texFormat = layer.texture[i].format;
-
-                // console.log('texWidth', texWidth); 
-                // console.log('texHeight', texHeight); 
-
                 //If a layer is added, we need to create the planar mesh with the texture for the first time, so, if it's undefined
                 //We'll create it only now in order to avoid useless computation on each layer selections
                 if (!layer.texture[i].planeMesh) {
 
                     var map2 = layer.texture[0].data.material.map;
-                    // console.log('map2', map2);
                     
                     var material = new THREE.SpriteMaterial( { map: map2, color: 0xffffff, fog: true } );
                     var planeMesh = new THREE.Sprite( material );
@@ -75,11 +80,9 @@ var animationDuration = 200;
                     planeMesh.name = "planeMesh";
                     
                     layer.texture[i].planeMesh = planeMesh;
-                    // console.log('layer.texture[i].planeMesh', layer.texture[i].planeMesh);
                 }
             }
 
-            // console.log('layer.texture[0].planeMesh', layer.texture[0].planeMesh);
             
             //Add the mesh to the scene
             texControls.reset();
@@ -97,7 +100,6 @@ var animationDuration = 200;
         //Always render, if nothing is shown, then no layer is selected
         texRenderer.render(texScene, texCamera);
 
-        // console.log('END TexturePanelPlugin::plug._applyTo'); 
     };
 
 
@@ -135,12 +137,10 @@ var animationDuration = 200;
 
 
     function render() {
-        console.log('BEG TexturePanelPlugin::render()'); 
         texRenderer.render(texScene, texCamera);
     }
 
     $(window).resize(function () {
-        // console.log('BEG TexturePanelPlugin::window.resize'); 
         resizeCanvas();
         if (texRenderer && texCamera && texScene)
             texRenderer.render(texScene, texCamera);
@@ -154,7 +154,6 @@ var animationDuration = 200;
     //Since it may be possible that the panel has been resized, better call resizeCanvas and be sure that
     //camera, controls and aspect are correct. If the tab opened is not the texture tab better resizing it
     $(window).on('tabsactivate', function (event, ui) {
-        console.log('BEG TexturePanelPlugin::window.tabsactivate'); 
         if (ui.newPanel.attr('id') === MLJ.widget.TabbedPane.getTexturePane().parent().attr('id')) {
             resizeCanvas();
             if (texRenderer && texCamera && texScene)
@@ -164,7 +163,6 @@ var animationDuration = 200;
     });
 
     function resizeCanvas() {
-        // console.log('BEG resizeCanvas'); 
         if (texRenderer && texCamera && texScene) {
             var panelWidth = $("#tab-Texture").width();
             var panelHeight = $("#tab-Texture").height()
@@ -192,7 +190,6 @@ var animationDuration = 200;
     }
 
     function showWidgets() {
-        // console.log('BEG showWidgets'); 
         //call the parent to show the div containing both label and button set
         for (var i = 0; i < widgets.length; i++) {
             if (widgets[i].rangedfloat)
@@ -234,8 +231,7 @@ var animationDuration = 200;
             var txtFile = "2910_w47_shertzer_section1.6a_reduceTextureIndices.floor1_sm.zip";
             
             var file1 = new File([""], txtFile, {type: "application/zip"})
-            // console.log('file1', file1); 
-            MLJ.core.File.openMeshFile(file1);
+            MLJ.core.MeshFile.openMeshFile(file1);
         });
     }
     

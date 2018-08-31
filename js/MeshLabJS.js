@@ -80,6 +80,33 @@
         return _PiP.$;
     }
 
+    ////////////////////////////////////////////////////
+    // BEG drag drop file
+    ////////////////////////////////////////////////////
+
+    // https://opensourcehacker.com/2011/11/11/cancelling-html5-drag-and-drop-events-in-web-browsers/    
+    // prevent from dropping anything outside the drop zone
+    function prepareDontMissDND() {
+
+        $(document.body).bind("dragover", function(e) {
+            e.preventDefault();
+            console.log('foo1');
+            return false;
+        });
+
+        $(document.body).bind("drop", function(e){
+            e.preventDefault();
+            console.log('foo2');
+            return false;
+        });
+
+    }
+
+    ////////////////////////////////////////////////////
+    // END drag drop file
+    ////////////////////////////////////////////////////
+
+    
     this.makeGUI = function (title) {
         _$border.append(_$hideBtn);
         _$wrapper.append(_$pane, _$border);
@@ -89,7 +116,8 @@
         });
 
         $('body').append(_$3D, _$wrapper, makeTitle(title));
-
+        prepareDontMissDND();
+        
         _$pane.append(MLJ.gui.getWidget("SceneBar")._make());
 
         var $wrap = $("<div/>").attr("id", "mlj-split-pane");
